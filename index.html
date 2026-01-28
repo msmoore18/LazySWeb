@@ -56,7 +56,6 @@
         }
 
         .info-panel {
-            position: relative;
             background: white;
             padding: 2rem;
             overflow-y: auto;
@@ -216,12 +215,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
-
-        /* Map overlay (mobile only: dims map and blocks taps when panel is open) */
-        #mapOverlay {
-            display: none;
-        }
-
         /* Mobile responsive */
         @media (max-width: 768px) {
             .map-wrapper {
@@ -257,43 +250,12 @@
             }
 
             .close-panel-btn {
-                display: none;
+                display: block;
             }
 
             #map {
                 height: 100%;
             }
-        
-            /* Ensure the map has a real height on iPhone */
-            #map {
-                height: 100vh;
-            }
-
-            /* Show the close button on mobile only */
-            .close-panel-btn {
-                display: block;
-            }
-
-            /* Mobile overlay (dims + blocks taps while panel is open) */
-            #mapOverlay {
-                display: block;
-                position: fixed;
-                left: 0;
-                right: 0;
-                top: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.35);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.2s ease-in-out;
-                z-index: 1000; /* below panel (1001), above map */
-            }
-
-            body.panel-open #mapOverlay {
-                opacity: 1;
-                pointer-events: auto;
-            }
-
         }
     </style>
 </head>
@@ -306,11 +268,10 @@
 
         <div class="map-wrapper">
             <div id="map"></div>
-            <div id="mapOverlay" aria-hidden="true"></div>
 
             <div id="infoPanel" class="info-panel empty">
-                <button class="close-panel-btn" onclick="closePanel()" aria-label="Close">×</button>
-                <div id="infoContent">👆 Click on any block on the map to view its details</div>
+                <button class="close-panel-btn" onclick="closePanel()">×</button>
+                👆 Click on any block on the map to view its details
             </div>
         </div>
     </div>
@@ -727,95 +688,17 @@ const blockDetails = {
                     }
                 });
             });
-        
-            // Overlay click closes the panel (mobile dim layer)
-            const overlay = document.getElementById('mapOverlay');
-            if (overlay && !overlay.dataset.bound) {
-                overlay.dataset.bound = '1';
-                overlay.addEventListener('click', closePanel);
-            }
-
-            // Swipe down on the panel to close (mobile)
-            const panelEl = document.getElementById('infoPanel');
-            if (panelEl && !panelEl.dataset.swipeBound) {
-                panelEl.dataset.swipeBound = '1';
-                let startY = 0;
-                let currentY = 0;
-                let dragging = false;
-
-                panelEl.addEventListener('touchstart', (e) => {
-                    if (!panelEl.classList.contains('visible')) return;
-                    const t = e.touches && e.touches[0];
-                    if (!t) return;
-                    startY = t.clientY;
-                    currentY = startY;
-                    dragging = true;
-                    panelEl.style.transition = 'none';
-                }, { passive: true });
-
-                panelEl.addEventListener('touchmove', (e) => {
-                    if (!dragging) return;
-                    const t = e.touches && e.touches[0];
-                    if (!t) return;
-                    currentY = t.clientY;
-                    const delta = Math.max(0, currentY - startY);
-                    panelEl.style.transform = `translateY(${delta}px)`;
-                    const overlayEl = document.getElementById('mapOverlay');
-                    if (overlayEl) {
-                        overlayEl.style.opacity = String(Math.max(0, 1 - delta / 250));
-                    }
-                }, { passive: true });
-
-                const endDrag = () => {
-                    if (!dragging) return;
-                    dragging = false;
-                    panelEl.style.transition = '';
-                    const delta = currentY - startY;
-                    panelEl.style.transform = '';
-                    const overlayEl = document.getElementById('mapOverlay');
-                    if (overlayEl) overlayEl.style.opacity = '';
-
-                    if (delta > 120) closePanel();
-                };
-
-                panelEl.addEventListener('touchend', endDrag, { passive: true });
-                panelEl.addEventListener('touchcancel', endDrag, { passive: true });
-            }
-
-}
+        }
 
 
         function closePanel() {
             const panel = document.getElementById('infoPanel');
-            const content = document.getElementById('infoContent');
-
             panel.classList.remove('visible');
-            panel.classList.add('empty');
-            document.body.classList.remove('panel-open');
-
-            if (content) {
-                content.innerHTML = '👆 Click on any block on the map to view its details';
-            }
-
-            // Re-enable map interactions (they are disabled on mobile when panel is open)
-            if (map) {
-                map.dragging.enable();
-                map.scrollWheelZoom.enable();
-                map.doubleClickZoom.enable();
-                map.touchZoom.enable();
-                map.boxZoom.enable();
-                map.keyboard.enable();
-                if (map.tap) map.tap.enable();
-            }
-
             if (currentPolygon) {
-                currentPolygon.setStyle({
+                currentPolygon.setStyle({ 
                     fillOpacity: 0.4,
                     weight: 2
                 });
-            }
-            currentPolygon = null;
-        });
             }
             currentPolygon = null;
         }
@@ -823,18 +706,6 @@ const blockDetails = {
         function showPanel() {
             const panel = document.getElementById('infoPanel');
             panel.classList.add('visible');
-            document.body.classList.add('panel-open');
-
-            // On mobile, prevent accidental map taps behind the panel
-            if (window.matchMedia('(max-width: 768px)').matches && map) {
-                map.dragging.disable();
-                map.scrollWheelZoom.disable();
-                map.doubleClickZoom.disable();
-                map.touchZoom.disable();
-                map.boxZoom.disable();
-                map.keyboard.disable();
-                if (map.tap) map.tap.disable();
-            }
         }
 
         function selectBlock(blockId, polygon) {
@@ -876,10 +747,9 @@ const blockDetails = {
 
             // Update info panel
             const panel = document.getElementById('infoPanel');
-            const content = document.getElementById('infoContent');
             panel.className = 'info-panel';
             showPanel();
-            content.innerHTML = `
+            panel.innerHTML = `
                 <div class="block-header">
                     <h2>Block ${blockId}</h2>
                     <div class="block-color-indicator" style="background: ${block.color};"></div>
