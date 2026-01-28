@@ -272,7 +272,28 @@
                 height: 100%;
             }
         }
-    </style>
+    
+        .info-panel {
+            position: relative;
+        }
+
+        .close-panel-btn {
+            display: block !important;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #E67E22;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 2000;
+        }
+
+</style>
 </head>
 <body>
     <div class="container">
@@ -285,6 +306,7 @@
             <div id="map"></div>
 
             <div id="infoPanel" class="info-panel empty">
+    <button class="close-panel-btn" onclick="closePanel()">×</button>
 <!-- Dynamic content goes here -->
                 <div id="infoContent">
                     👆 Click on any block on the map to view its details
