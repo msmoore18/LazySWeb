@@ -285,9 +285,7 @@
             <div id="map"></div>
 
             <div id="infoPanel" class="info-panel empty">
-                <button class="close-panel-btn" onclick="closePanel()">×</button>
-
-                <!-- Dynamic content goes here -->
+<!-- Dynamic content goes here -->
                 <div id="infoContent">
                     👆 Click on any block on the map to view its details
                 </div>
@@ -783,8 +781,7 @@ const blockDetails = {
                     <h2>Block ${blockId}</h2>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="block-color-indicator" style="background: ${block.color};"></div>
-                        <button class="close-panel-btn-inline" onclick="closePanel()" aria-label="Close">×</button>
-                    </div>
+</div>
                 </div>
                 
                 <div class="block-variety">${blockDetails[blockId]?.type || block.variety}</div>
