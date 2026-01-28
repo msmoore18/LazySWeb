@@ -260,6 +260,30 @@
                 height: 100%;
             }
         }
+
+        /* Close button bar for mobile */
+        .panel-header {
+            display: none;
+            background: #E67E22;
+            padding: 12px 20px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .panel-header::before {
+            content: '▼ Close';
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .panel-header {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -273,6 +297,7 @@
             <div id="map"></div>
 
             <div id="infoPanel" class="info-panel empty">
+                <div class="panel-header" onclick="closePanel()"></div>
                 <button class="close-panel-btn" onclick="closePanel()">×</button>
                 👆 Click on any block on the map to view its details
             </div>
