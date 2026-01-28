@@ -226,6 +226,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.5);
             -webkit-appearance: none;
         }
+        
+        /* Only show close button on mobile */
+        @media (max-width: 768px) {
+        }
 
         /* Mobile responsive */
         @media (max-width: 768px) {
@@ -259,10 +263,6 @@
 
             .info-panel.empty {
                 transform: translateY(100%);
-            }
-
-            .close-panel-btn {
-                display: block !important;
             }
 
             #map {
@@ -794,8 +794,6 @@ const blockDetails = {
                     <h2>Block ${blockId}</h2>
                     <div class="block-color-indicator" style="background: ${block.color};"></div>
                 </div>
-                
-                <div class="block-variety">${blockDetails[blockId]?.type || block.variety}</div>
 
                 <div class="info-section" style="margin-top: 0; padding-top: 0; border-top: none;">
                     <h3>📊 ${new Date().getFullYear() - 1} Financials</h3>
