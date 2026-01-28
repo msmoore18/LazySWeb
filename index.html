@@ -198,12 +198,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        
-        /* Map overlay (dims + blocks taps when panel is open on mobile) */
-        #mapOverlay {
-            display: none;
-        }
-
         /* Close button */
         .close-panel-btn {
             position: absolute;
@@ -220,6 +214,12 @@
             display: none;
             z-index: 10;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+
+        /* Map overlay (mobile only: dims map and blocks taps when panel is open) */
+        #mapOverlay {
+            display: none;
         }
 
         /* Mobile responsive */
@@ -257,12 +257,13 @@
             }
 
             .close-panel-btn {
-                display: block;
+                display: none;
             }
 
             #map {
                 height: 100%;
             }
+        
             /* Ensure the map has a real height on iPhone */
             #map {
                 height: 100vh;
@@ -273,8 +274,9 @@
                 display: block;
             }
 
-            /* Dim + disable map interaction when the panel is open */
+            /* Mobile overlay (dims + blocks taps while panel is open) */
             #mapOverlay {
+                display: block;
                 position: fixed;
                 left: 0;
                 right: 0;
@@ -285,7 +287,6 @@
                 pointer-events: none;
                 transition: opacity 0.2s ease-in-out;
                 z-index: 1000; /* below panel (1001), above map */
-                display: block;
             }
 
             body.panel-open #mapOverlay {
@@ -294,7 +295,7 @@
             }
 
         }
-</style>
+    </style>
 </head>
 <body>
     <div class="container">
@@ -308,7 +309,7 @@
             <div id="mapOverlay" aria-hidden="true"></div>
 
             <div id="infoPanel" class="info-panel empty">
-                <button class="close-panel-btn" onclick="closePanel()">×</button>
+                <button class="close-panel-btn" onclick="closePanel()" aria-label="Close">×</button>
                 <div id="infoContent">👆 Click on any block on the map to view its details</div>
             </div>
         </div>
@@ -726,10 +727,64 @@ const blockDetails = {
                     }
                 });
             });
-        }
-
-
         
+            // Overlay click closes the panel (mobile dim layer)
+            const overlay = document.getElementById('mapOverlay');
+            if (overlay && !overlay.dataset.bound) {
+                overlay.dataset.bound = '1';
+                overlay.addEventListener('click', closePanel);
+            }
+
+            // Swipe down on the panel to close (mobile)
+            const panelEl = document.getElementById('infoPanel');
+            if (panelEl && !panelEl.dataset.swipeBound) {
+                panelEl.dataset.swipeBound = '1';
+                let startY = 0;
+                let currentY = 0;
+                let dragging = false;
+
+                panelEl.addEventListener('touchstart', (e) => {
+                    if (!panelEl.classList.contains('visible')) return;
+                    const t = e.touches && e.touches[0];
+                    if (!t) return;
+                    startY = t.clientY;
+                    currentY = startY;
+                    dragging = true;
+                    panelEl.style.transition = 'none';
+                }, { passive: true });
+
+                panelEl.addEventListener('touchmove', (e) => {
+                    if (!dragging) return;
+                    const t = e.touches && e.touches[0];
+                    if (!t) return;
+                    currentY = t.clientY;
+                    const delta = Math.max(0, currentY - startY);
+                    panelEl.style.transform = `translateY(${delta}px)`;
+                    const overlayEl = document.getElementById('mapOverlay');
+                    if (overlayEl) {
+                        overlayEl.style.opacity = String(Math.max(0, 1 - delta / 250));
+                    }
+                }, { passive: true });
+
+                const endDrag = () => {
+                    if (!dragging) return;
+                    dragging = false;
+                    panelEl.style.transition = '';
+                    const delta = currentY - startY;
+                    panelEl.style.transform = '';
+                    const overlayEl = document.getElementById('mapOverlay');
+                    if (overlayEl) overlayEl.style.opacity = '';
+
+                    if (delta > 120) closePanel();
+                };
+
+                panelEl.addEventListener('touchend', endDrag, { passive: true });
+                panelEl.addEventListener('touchcancel', endDrag, { passive: true });
+            }
+
+}
+
+
         function closePanel() {
             const panel = document.getElementById('infoPanel');
             const content = document.getElementById('infoContent');
@@ -738,12 +793,11 @@ const blockDetails = {
             panel.classList.add('empty');
             document.body.classList.remove('panel-open');
 
-            // Reset content
             if (content) {
                 content.innerHTML = '👆 Click on any block on the map to view its details';
             }
 
-            // Re-enable map interactions
+            // Re-enable map interactions (they are disabled on mobile when panel is open)
             if (map) {
                 map.dragging.enable();
                 map.scrollWheelZoom.enable();
@@ -761,19 +815,18 @@ const blockDetails = {
                 });
             }
             currentPolygon = null;
-        }
-
+        });
+            }
             currentPolygon = null;
         }
 
-        
         function showPanel() {
             const panel = document.getElementById('infoPanel');
             panel.classList.add('visible');
             document.body.classList.add('panel-open');
 
             // On mobile, prevent accidental map taps behind the panel
-            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches && map) {
+            if (window.matchMedia('(max-width: 768px)').matches && map) {
                 map.dragging.disable();
                 map.scrollWheelZoom.disable();
                 map.doubleClickZoom.disable();
@@ -783,7 +836,6 @@ const blockDetails = {
                 if (map.tap) map.tap.disable();
             }
         }
-
 
         function selectBlock(blockId, polygon) {
             // Reset previous selection
