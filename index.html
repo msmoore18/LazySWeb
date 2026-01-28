@@ -198,6 +198,12 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        
+        /* Map overlay (dims + blocks taps when panel is open on mobile) */
+        #mapOverlay {
+            display: none;
+        }
+
         /* Close button */
         .close-panel-btn {
             position: absolute;
@@ -211,23 +217,9 @@
             height: 36px;
             font-size: 24px;
             cursor: pointer;
-            display: block;
+            display: none;
             z-index: 10;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        /* Inline close button (desktop & always visible) */
-        .close-panel-btn-inline {
-            background: transparent;
-            border: none;
-            font-size: 28px;
-            line-height: 1;
-            cursor: pointer;
-            color: #2C3E2B;
-            padding: 0 6px;
-        }
-        .close-panel-btn-inline:hover {
-            opacity: 0.7;
         }
 
         /* Mobile responsive */
@@ -271,28 +263,37 @@
             #map {
                 height: 100%;
             }
-        }
-    
-        .info-panel {
-            position: relative;
-        }
+            /* Ensure the map has a real height on iPhone */
+            #map {
+                height: 100vh;
+            }
 
-        .close-panel-btn {
-            display: block !important;
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: #E67E22;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 2000;
-        }
+            /* Show the close button on mobile only */
+            .close-panel-btn {
+                display: block;
+            }
 
+            /* Dim + disable map interaction when the panel is open */
+            #mapOverlay {
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.35);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease-in-out;
+                z-index: 1000; /* below panel (1001), above map */
+                display: block;
+            }
+
+            body.panel-open #mapOverlay {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+        }
 </style>
 </head>
 <body>
@@ -304,13 +305,11 @@
 
         <div class="map-wrapper">
             <div id="map"></div>
+            <div id="mapOverlay" aria-hidden="true"></div>
 
             <div id="infoPanel" class="info-panel empty">
-    <button class="close-panel-btn" onclick="closePanel()">×</button>
-<!-- Dynamic content goes here -->
-                <div id="infoContent">
-                    👆 Click on any block on the map to view its details
-                </div>
+                <button class="close-panel-btn" onclick="closePanel()">×</button>
+                <div id="infoContent">👆 Click on any block on the map to view its details</div>
             </div>
         </div>
     </div>
@@ -730,20 +729,33 @@ const blockDetails = {
         }
 
 
+        
         function closePanel() {
             const panel = document.getElementById('infoPanel');
             const content = document.getElementById('infoContent');
 
             panel.classList.remove('visible');
             panel.classList.add('empty');
+            document.body.classList.remove('panel-open');
 
-            // Reset the panel content
+            // Reset content
             if (content) {
                 content.innerHTML = '👆 Click on any block on the map to view its details';
             }
 
+            // Re-enable map interactions
+            if (map) {
+                map.dragging.enable();
+                map.scrollWheelZoom.enable();
+                map.doubleClickZoom.enable();
+                map.touchZoom.enable();
+                map.boxZoom.enable();
+                map.keyboard.enable();
+                if (map.tap) map.tap.enable();
+            }
+
             if (currentPolygon) {
-                currentPolygon.setStyle({ 
+                currentPolygon.setStyle({
                     fillOpacity: 0.4,
                     weight: 2
                 });
@@ -751,10 +763,27 @@ const blockDetails = {
             currentPolygon = null;
         }
 
+            currentPolygon = null;
+        }
+
+        
         function showPanel() {
             const panel = document.getElementById('infoPanel');
             panel.classList.add('visible');
+            document.body.classList.add('panel-open');
+
+            // On mobile, prevent accidental map taps behind the panel
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches && map) {
+                map.dragging.disable();
+                map.scrollWheelZoom.disable();
+                map.doubleClickZoom.disable();
+                map.touchZoom.disable();
+                map.boxZoom.disable();
+                map.keyboard.disable();
+                if (map.tap) map.tap.disable();
+            }
         }
+
 
         function selectBlock(blockId, polygon) {
             // Reset previous selection
@@ -801,9 +830,7 @@ const blockDetails = {
             content.innerHTML = `
                 <div class="block-header">
                     <h2>Block ${blockId}</h2>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div class="block-color-indicator" style="background: ${block.color};"></div>
-</div>
+                    <div class="block-color-indicator" style="background: ${block.color};"></div>
                 </div>
                 
                 <div class="block-variety">${blockDetails[blockId]?.type || block.variety}</div>
