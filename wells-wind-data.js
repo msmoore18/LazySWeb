@@ -1,0 +1,41 @@
+const wellsData = {
+  '1': {coords: [36.5441, -119.1924], meter: '1010420993', capacity: 122, hp: 10, diameter: '8', depth: '170', standingWater: 43, kwhPerAcreFt: 387.7, dischargePressure: 7, drawdown: 32, acreFtPer24h: 0.539, efficiency: 24},
+  '2': {coords: [36.5484, -119.1938], meter: '1009575576', capacity: 280, hp: 15, diameter: '36', depth: '91', standingWater: 58, kwhPerAcreFt: 230.8, dischargePressure: 8.9, drawdown: 15, acreFtPer24h: 1.237, efficiency: 41.5},
+  '3': {coords: [36.5519451, -119.192753], meter: '1009995137', capacity: 115, hp: 7.5, diameter: '-', depth: '124', standingWater: 43, kwhPerAcreFt: 329.6, dischargePressure: 15, drawdown: 61, acreFtPer24h: 0.508, efficiency: 43},
+  '4': {coords: [36.55192, -119.19405], meter: '1006756903', capacity: 90.9, hp: 7.5, diameter: '8', depth: '>125', standingWater: 48, kwhPerAcreFt: 443.9, dischargePressure: 1.5, drawdown: 23, acreFtPer24h: 0.402, efficiency: 17.2},
+  '5': {coords: [36.55887, -119.19005], meter: '1010420826', capacity: 200, hp: 10, diameter: '-', depth: '>89', standingWater: 66, kwhPerAcreFt: 274.5, dischargePressure: 1.5, drawdown: 7, acreFtPer24h: 0.884, efficiency: 28.5},
+  '6': {coords: [36.55202, -119.19675], meter: '1006935407', capacity: 40.5, hp: 3, diameter: '8', depth: '159', standingWater: 47, kwhPerAcreFt: 427.8, dischargePressure: 1.5, drawdown: 41, acreFtPer24h: 0.179, efficiency: 21.9},
+  '7': {coords: [36.54369307262251, -119.1927831993186], meter: '1010420808', capacity: 10, hp: 5, diameter: '12.5', depth: '154', standingWater: 32, kwhPerAcreFt: 2921.88, dischargePressure: 0, drawdown: 83, acreFtPer24h: 0.04, efficiency: 4.03},
+  '8': {coords: [36.54035, -119.19734], meter: '1010047873', capacity: 73.4, hp: 7.5, diameter: '12', depth: '175', standingWater: 45, kwhPerAcreFt: 571.22, dischargePressure: 24, drawdown: 63, acreFtPer24h: 0.32, efficiency: 29.26},
+  '9': {coords: [36.542, -119.198947], meter: '1010779364', capacity: 97.5, hp: 10, diameter: '-', depth: '156', standingWater: 46, kwhPerAcreFt: 521.38, dischargePressure: 30, drawdown: 28, acreFtPer24h: 0.43, efficiency: 28.11},
+  '10': {coords: [36.541105, -119.20119], meter: '1009545766', capacity: 50, hp: 10, diameter: '8', depth: '200', standingWater: 44, kwhPerAcreFt: 1041.67, dischargePressure: 45, drawdown: 136, acreFtPer24h: 0.22, efficiency: 27.88},
+  '11': {coords: [36.54032, -119.19821], meter: '-', capacity: 65, hp: 3, diameter: '8', depth: '149', standingWater: 41, kwhPerAcreFt: '-', dischargePressure: '-', drawdown: 37, acreFtPer24h: '-', efficiency: '-'},
+  '12': {coords: [36.544004, -119.196108], meter: '1010999393', capacity: '-', hp: 5, diameter: '-', depth: '400', standingWater: 50, kwhPerAcreFt: '-', dischargePressure: '-', drawdown: '-', acreFtPer24h: '-', efficiency: '-'},
+  '13': {coords: [36.5497, -119.19633], meter: '-', capacity: 194, hp: 10, diameter: '8', depth: '402', standingWater: 31, kwhPerAcreFt: '-', dischargePressure: '-', drawdown: '-', acreFtPer24h: '-', efficiency: '-'},
+  '14': {coords: [36.55841039017479, -119.1880862177245], meter: '-', capacity: '-', hp: '-', diameter: '-', depth: '-', standingWater: '-', kwhPerAcreFt: '-', dischargePressure: '-', drawdown: '-', acreFtPer24h: '-', efficiency: '-'}
+};
+
+const windMachinesData = {
+  '1': {coords: [36.54484038750099, -119.1932138048993], meter: '1009536457', date: '2012', type: 'Electric'},
+  '2': {coords: [36.54487582529289, -119.1956440436317], meter: '1009536455', date: '2012', type: 'Electric'},
+  '3': {coords: [36.54687624398802, -119.1932095344021], meter: '1009989047', date: '2012', type: 'Electric'},
+  '4': {coords: [36.54689059274199, -119.1954621257332], meter: '1009999988', date: '2012', type: 'Electric'},
+  '5': {coords: [36.54836751319176, -119.1979742575799], meter: '1009903741', date: '2012', type: 'Electric'},
+  '6': {coords: [36.548458, -119.2001836], meter: '1009536456', date: '2012', type: 'Electric'},
+  '7': {coords: [36.5503773, -119.1885277], meter: '5000027197', date: '2013', type: 'Electric'},
+  '8': {coords: [36.5504097, -119.190711], meter: '1011507052', date: '2013', type: 'Electric'},
+  '9': {coords: [36.5504296, -119.1931522], meter: '5000030542', date: '2013', type: 'Electric'},
+  '10': {coords: [36.5503173, -119.1954086], meter: '5000030543', date: '2012', type: 'Electric'},
+  '11': {coords: [36.55286583939162, -119.1922226704109], meter: 'N/A', date: '2015', type: 'Vamco 7.5L LP GP'},
+  '12': {coords: [36.55496339241446, -119.1921704350371], meter: 'N/A', date: '2015', type: 'Vamco 7.5L LP GP'},
+  '13': {coords: [36.552944392589, -119.1953350811265], meter: 'N/A', date: '2015', type: 'Vamco 7.5L LP GP'},
+  '14': {coords: [36.54286281241583, -119.1931221192451], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '15': {coords: [36.54099272719731, -119.1931075534007], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '16': {coords: [36.54268491279378, -119.1978258547719], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '17': {coords: [36.5400868739931, -119.1977886347584], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '18': {coords: [36.539422, -119.200266], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '19': {coords: [36.54129808682404, -119.2003116088028], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 1500, 129HP, LPG'},
+  '20': {coords: [36.54303089024134, -119.2003260949928], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 2600 V-8, LPG'},
+  '21': {coords: [36.5377527753678, -119.1977593296533], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 2600 V-8, LPG'},
+  '22': {coords: [36.53905090387212, -119.202384290862], meter: 'N/A', date: '2020', type: 'Orchard-Rite Model 2600 V-8, LPG'}
+};
