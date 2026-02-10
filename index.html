@@ -325,6 +325,38 @@
                 display: none;
             }
         }
+
+        /* Year selector */
+        .year-selector {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #E67E22;
+        }
+
+        .year-selector label {
+            display: block;
+            font-weight: 600;
+            color: #2C3E2B;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .year-selector select {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .year-selector select:focus {
+            outline: none;
+            border-color: #E67E22;
+        }
     </style>
 </head>
 <body>
@@ -347,6 +379,8 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="revenue-data.js"></script>
+    
 
     <script>
         // Wait for everything to load
@@ -354,7 +388,13 @@
         const farmCenter = [36.548139, -119.193111];
 
         // Block data with actual revenue from QuickBooks
-                const blockData = {
+                
+
+        
+
+        // Revenue data loaded from external file
+
+        const blockData = {
             '1': {
                 name: 'Block 1',
                 variety: 'Clementines',
@@ -703,12 +743,13 @@ const blockDetails = {
 
         let map;
         let currentPolygon = null;
+        let currentBlockId = null;
 
         function initMap() {
             // Initialize map centered on farm
             map = L.map('map', {
                 center: farmCenter,
-                zoom: 17,
+                zoom: 15,
                 zoomControl: true
             });
 
@@ -794,11 +835,43 @@ const blockDetails = {
             currentPolygon = polygon;
 
             const block = blockData[blockId];
+            
+            // Get selected year (default to previous year)
+            // Only use the dropdown value if we're re-selecting the SAME block
+            const currentYear = new Date().getFullYear();
+            const isChangingYear = (currentBlockId === blockId);  // Same block, just changing year
+            const dropdownYear = document.getElementById('yearSelect')?.value;
+            
+            let selectedYear;
+            if (isChangingYear && dropdownYear && revenue[blockId]?.[dropdownYear]) {
+                // Changing year on same block and that year has data - use dropdown
+                selectedYear = dropdownYear;
+            } else {
+                // New block OR dropdown year doesn't exist - use most recent year available
+                const availableYears = Object.keys(revenue[blockId] || {}).sort().reverse();
+                selectedYear = availableYears.length > 0 ? availableYears[0] : String(currentYear - 1);
+            }
+            
+            // Update current block ID
+            currentBlockId = blockId;
+            
+            // Get revenue data for selected year
+            const yearData = revenue[blockId]?.[selectedYear];
+            
+            if (!yearData) {
+                alert(`No revenue data for Block ${blockId} in ${selectedYear}`);
+                return;
+            }
+            
+            const yearRevenue = yearData.r;
+            const yearBins = yearData.b;
+            const hasNote = yearData.note;
+            const hasRevenue = yearRevenue > 0;
 
-            // Calculate metrics
-            const binsPerAcre = (block.bins / block.acres).toFixed(1);
-            const dollarPerBin = (block.revenue / block.bins).toFixed(2);
-            const dollarPerAcre = (block.revenue / block.acres).toFixed(2);
+            // Calculate metrics using selected year data
+            const binsPerAcre = (yearBins / block.acres).toFixed(1);
+            const dollarPerBin = hasRevenue ? (yearRevenue / yearBins).toFixed(2) : 'N/A';
+            const dollarPerAcre = hasRevenue ? (yearRevenue / block.acres).toFixed(2) : 'N/A';
             const treeAge = 2025 - block.yearPlanted;
 
             // Determine performance
@@ -829,22 +902,35 @@ const blockDetails = {
                     <div class="block-color-indicator" style="background: ${block.color};"></div>
                 </div>
 
-                <div class="info-section" style="margin-top: 0; padding-top: 0; border-top: none;">
-                    <h3>📊 ${new Date().getFullYear() - 1} Financials</h3>
+                <div class="year-selector">
+                    <label for="yearSelect">📅 Select Year:</label>
+                    <select id="yearSelect" onchange="selectBlock('${blockId}', currentPolygon)">
+                        ${Object.keys(revenue[blockId] || {}).sort().reverse().map(y => 
+                            `<option value="${y}" ${y == selectedYear ? 'selected' : ''}>${y}</option>`
+                        ).join('')}
+                    </select>
                 </div>
 
+                <div class="info-section" style="margin-top: 0; padding-top: 0; border-top: none;">
+                    <h3>📊 ${selectedYear} Financials</h3>
+                </div>
+
+                ${hasNote ? `<div style="background: #FFF3CD; border-left: 4px solid #FFC107; padding: 0.8rem; margin-bottom: 1rem; border-radius: 4px;">
+                    <strong>⚠️ Note:</strong> ${hasNote}
+                </div>` : ''}
+                
                 <div class="stat-grid">
                     <div class="stat-box">
                         <div class="stat-label">Yearly Revenue</div>
-                        <div class="stat-value">$${block.revenue.toLocaleString()}</div>
+                        <div class="stat-value">${hasRevenue ? '$' + yearRevenue.toLocaleString(undefined, {maximumFractionDigits: 0}) : 'N/A'}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Total Bins</div>
-                        <div class="stat-value">${block.bins.toLocaleString()}</div>
+                        <div class="stat-value">${yearBins.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">$/Bin</div>
-                        <div class="stat-value">$${dollarPerBin}</div>
+                        <div class="stat-value">${hasRevenue ? '$' + dollarPerBin : 'N/A'}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Bins/Acre</div>
@@ -852,7 +938,7 @@ const blockDetails = {
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">$/Acre</div>
-                        <div class="stat-value">$${parseFloat(dollarPerAcre).toLocaleString()}</div>
+                        <div class="stat-value">${hasRevenue ? '$' + parseFloat(dollarPerAcre).toLocaleString() : 'N/A'}</div>
                     </div>
                     
                 </div>
