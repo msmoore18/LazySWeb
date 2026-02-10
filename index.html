@@ -405,6 +405,16 @@
                 font-size: 13px;
             }
         }
+        /* Make block label markers clickable */
+        .leaflet-marker-icon.block-label {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        .leaflet-marker-icon.block-label > div {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
     </style>
 </head>
 <body>
@@ -987,15 +997,20 @@ const blockDetails = {
                 const label = L.marker(center, {
                     icon: L.divIcon({
                         className: 'block-label',
-                        html: `<div style="background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; white-space: nowrap; display: inline-block; cursor: pointer;">${block.name.replace('Block ', '')}</div>`,
+                        html: `<div class="block-label-text" style="background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; white-space: nowrap; display: inline-block; cursor: pointer;">${block.name.replace('Block ', '')}</div>`,
                         iconSize: [30, 20]
                     })
                 });
                 
-                // Make label clickable too
-                label.on('click', () => {
-                    selectBlock(blockId, polygon);
+                // Store reference to polygon for click handler
+                label._blockId = blockId;
+                label._polygon = polygon;
+                
+                // Make label clickable
+                label.on('click', function() {
+                    selectBlock(this._blockId, this._polygon);
                 });
+                
                 label.addTo(blocksLayer);
 
                 // Click handler
