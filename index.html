@@ -357,6 +357,75 @@
             outline: none;
             border-color: #E67E22;
         }
+
+        /* Layer toggle buttons */
+        .layer-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            min-width: 120px;
+        }
+
+        .layer-controls h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #2C3E2B;
+        }
+
+        .toggle-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            margin: 4px 0;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .toggle-btn.active {
+            background: #E67E22;
+            color: white;
+            border-color: #E67E22;
+        }
+
+        .toggle-btn:hover {
+            border-color: #E67E22;
+        }
+
+        @media (max-width: 768px) {
+            .layer-controls {
+                top: auto;
+                bottom: 80px;
+                right: 10px;
+                left: 10px;
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+                padding: 8px;
+                min-width: auto;
+            }
+            
+            .layer-controls h4 {
+                display: none;
+            }
+            
+            .toggle-btn {
+                flex: 1;
+                padding: 12px 8px;
+                margin: 0;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -367,7 +436,14 @@
         </div>
 
         <div class="map-wrapper">
-            <div id="map"></div>
+            <div id="map">
+                <div class="layer-controls">
+                    <h4>🗺️ Layers</h4>
+                    <button class="toggle-btn active" id="toggleBlocks">Blocks</button>
+                    <button class="toggle-btn" id="toggleWells">Wells</button>
+                    <button class="toggle-btn" id="toggleWindMachines">Wind Machines</button>
+                </div>
+            </div>
 
             <div id="infoPanel" class="info-panel empty">
                 <div class="panel-header" onclick="closePanel()"></div>
@@ -380,6 +456,16 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="revenue-data.js"></script>
+    <script src="wells-wind-data.js"></script>
+
+    <script>
+        // Debug: Check if data loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Wells data loaded:', typeof wellsData !== 'undefined', wellsData ? Object.keys(wellsData).length : 0);
+            console.log('Wind machines data loaded:', typeof windMachinesData !== 'undefined', windMachinesData ? Object.keys(windMachinesData).length : 0);
+        });
+    </script>
+
     
 
     <script>
@@ -391,6 +477,7 @@
                 
 
         
+
 
         // Revenue data loaded from external file
 
@@ -744,6 +831,152 @@ const blockDetails = {
         let map;
         let currentPolygon = null;
         let currentBlockId = null;
+        
+        // Layer groups
+        let blocksLayer = L.layerGroup();
+        let wellsLayer = L.layerGroup();
+        let windMachinesLayer = L.layerGroup();
+        let currentLayer = 'blocks';
+        let wellMarkers = [];
+        let windMarkers = [];
+
+        
+        function toggleLayer(layer) {
+            // Update button states
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (layer === 'blocks') {
+                document.getElementById('toggleBlocks').classList.add('active');
+                blocksLayer.addTo(map);
+                wellsLayer.remove();
+                windMachinesLayer.remove();
+                currentLayer = 'blocks';
+            } else if (layer === 'wells') {
+                document.getElementById('toggleWells').classList.add('active');
+                blocksLayer.remove();
+                wellsLayer.addTo(map);
+                windMachinesLayer.remove();
+                currentLayer = 'wells';
+                closePanel(); // Close any open block panel
+            } else if (layer === 'windMachines') {
+                document.getElementById('toggleWindMachines').classList.add('active');
+                blocksLayer.remove();
+                wellsLayer.remove();
+                windMachinesLayer.addTo(map);
+                currentLayer = 'windMachines';
+                closePanel(); // Close any open block panel
+            }
+        }
+
+        function selectWell(wellId) {
+            const well = wellsData[wellId];
+            const panel = document.getElementById('infoPanel');
+            panel.className = 'info-panel';
+            
+            panel.innerHTML = `
+                <div class="close-button-wrapper">
+                    <button class="mobile-close-btn" onclick="closePanel()">✕ Close</button>
+                </div>
+                
+                <div class="block-header">
+                    <h2>Well #${wellId}</h2>
+                    <div class="block-color-indicator" style="background: #2196F3;"></div>
+                </div>
+
+                <div class="info-section">
+                    <h3>💧 Performance Metrics</h3>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Capacity</div>
+                        <div class="stat-value">${well.capacity} GPM</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Efficiency</div>
+                        <div class="stat-value">${well.efficiency}%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Horsepower</div>
+                        <div class="stat-value">${well.hp} HP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Daily Output</div>
+                        <div class="stat-value">${well.acreFtPer24h} AF</div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3>📊 Well Specifications</h3>
+                    <div class="info-row">
+                        <span class="info-label">Meter Number</span>
+                        <span class="info-value">${well.meter}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Diameter</span>
+                        <span class="info-value">${well.diameter} in</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Depth</span>
+                        <span class="info-value">${well.depth} ft</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Water Level</span>
+                        <span class="info-value">${well.standingWater} ft</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Drawdown</span>
+                        <span class="info-value">${well.drawdown} ft</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pressure</span>
+                        <span class="info-value">${well.dischargePressure} psi</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">kWh per AF</span>
+                        <span class="info-value">${well.kwhPerAcreFt}</span>
+                    </div>
+                </div>
+            `;
+            
+            showPanel();
+        }
+
+        function selectWindMachine(wmId) {
+            const wm = windMachinesData[wmId];
+            const panel = document.getElementById('infoPanel');
+            panel.className = 'info-panel';
+            
+            panel.innerHTML = `
+                <div class="close-button-wrapper">
+                    <button class="mobile-close-btn" onclick="closePanel()">✕ Close</button>
+                </div>
+                
+                <div class="block-header">
+                    <h2>Wind Machine #${wmId}</h2>
+                    <div class="block-color-indicator" style="background: #F44336;"></div>
+                </div>
+
+                <div class="info-section">
+                    <h3>🌬️ Equipment Details</h3>
+                    <div class="info-row">
+                        <span class="info-label">Type</span>
+                        <span class="info-value">${wm.type}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Year Acquired</span>
+                        <span class="info-value">${wm.date}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Meter Number</span>
+                        <span class="info-value">${wm.meter}</span>
+                    </div>
+                </div>
+            `;
+            
+            showPanel();
+        }
+
 
         function initMap() {
             // Initialize map centered on farm
@@ -753,9 +986,9 @@ const blockDetails = {
                 zoomControl: true
             });
 
-            // Add satellite imagery (using ESRI World Imagery - free)
+            // Add ESRI satellite imagery
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri',
+                attribution: 'ESRI',
                 maxZoom: 19
             }).addTo(map);
 
@@ -768,7 +1001,7 @@ const blockDetails = {
                     fillColor: block.color,
                     fillOpacity: 0.4,
                     weight: 2
-                }).addTo(map);
+                }).addTo(blocksLayer);
 
                 // Add label
                 const center = polygon.getBounds().getCenter();
@@ -778,7 +1011,7 @@ const blockDetails = {
                         html: `<div style="background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; white-space: nowrap; display: inline-block;">${block.name.replace('Block ', '')}</div>`,
                         iconSize: [30, 20]
                     })
-                }).addTo(map);
+                }).addTo(blocksLayer);
 
                 // Click handler
                 polygon.on('click', () => {
@@ -787,17 +1020,91 @@ const blockDetails = {
 
                 // Hover effect
                 polygon.on('mouseover', function() {
-                    if (currentPolygon !== this) {
-                        this.setStyle({ fillOpacity: 0.6 });
-                    }
+                    this.setStyle({ fillOpacity: 0.6 });
                 });
-
                 polygon.on('mouseout', function() {
-                    if (currentPolygon !== this) {
+                    if (this !== currentPolygon) {
                         this.setStyle({ fillOpacity: 0.4 });
                     }
                 });
             });
+
+            // Add wells and wind machines
+            addWellsAndWindMachines();
+
+            // Add blocks layer to map by default
+            blocksLayer.addTo(map);
+        }
+
+        function addWellsAndWindMachines() {
+            // Add wells
+            Object.entries(wellsData).forEach(([wellId, well]) => {
+                const marker = L.circleMarker(well.coords, {
+                    radius: 8,
+                    fillColor: '#2196F3',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+                
+                marker.on('click', () => {
+                    console.log('Well marker clicked:', wellId);
+                    selectWell(wellId);
+                });
+                marker.addTo(wellsLayer);
+                
+                // Add clickable label
+                const label = L.marker(well.coords, {
+                    icon: L.divIcon({
+                        className: 'well-label',
+                        html: `<div style="font-size: 11px; font-weight: bold; color: #2196F3; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white; cursor: pointer;">#${wellId}</div>`,
+                        iconSize: [30, 20]
+                    })
+                });
+                
+                label.on('click', () => {
+                    console.log('Well label clicked:', wellId);
+                    selectWell(wellId);
+                });
+                label.addTo(wellsLayer);
+            });
+
+            // Add wind machines
+            Object.entries(windMachinesData).forEach(([wmId, wm]) => {
+                const marker = L.circleMarker(wm.coords, {
+                    radius: 8,
+                    fillColor: '#F44336',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+                
+                marker.on('click', () => {
+                    console.log('Wind machine marker clicked:', wmId);
+                    selectWindMachine(wmId);
+                });
+                marker.addTo(windMachinesLayer);
+                
+                // Add clickable label
+                const label = L.marker(wm.coords, {
+                    icon: L.divIcon({
+                        className: 'wm-label',
+                        html: `<div style="font-size: 11px; font-weight: bold; color: #F44336; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white; cursor: pointer;">#${wmId}</div>`,
+                        iconSize: [30, 20]
+                    })
+                });
+                
+                label.on('click', () => {
+                    console.log('Wind machine label clicked:', wmId);
+                    selectWindMachine(wmId);
+                });
+                label.addTo(windMachinesLayer);
+            });
+
+            // Add blocks layer to map by default
+            blocksLayer.addTo(map);
         }
 
 
@@ -986,7 +1293,14 @@ const blockDetails = {
         }
 
         // Initialize when page loads
-        window.addEventListener('load', initMap);
+        window.addEventListener('load', () => {
+            initMap();
+            
+            // Add toggle button event listeners
+            document.getElementById('toggleBlocks').addEventListener('click', () => toggleLayer('blocks'));
+            document.getElementById('toggleWells').addEventListener('click', () => toggleLayer('wells'));
+            document.getElementById('toggleWindMachines').addEventListener('click', () => toggleLayer('windMachines'));
+        });
         
 
     </script>
