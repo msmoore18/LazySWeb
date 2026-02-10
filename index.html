@@ -982,15 +982,21 @@ const blockDetails = {
                     weight: 2
                 }).addTo(blocksLayer);
 
-                // Add label
+                // Add clickable label
                 const center = polygon.getBounds().getCenter();
-                L.marker(center, {
+                const label = L.marker(center, {
                     icon: L.divIcon({
                         className: 'block-label',
-                        html: `<div style="background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; white-space: nowrap; display: inline-block;">${block.name.replace('Block ', '')}</div>`,
+                        html: `<div style="background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 12px; white-space: nowrap; display: inline-block; cursor: pointer;">${block.name.replace('Block ', '')}</div>`,
                         iconSize: [30, 20]
                     })
-                }).addTo(blocksLayer);
+                });
+                
+                // Make label clickable too
+                label.on('click', () => {
+                    selectBlock(blockId, polygon);
+                });
+                label.addTo(blocksLayer);
 
                 // Click handler
                 polygon.on('click', () => {
@@ -1013,6 +1019,50 @@ const blockDetails = {
 
             // Add blocks layer to map by default
             blocksLayer.addTo(map);
+            
+            // Add geolocation control (shows user location but doesn't auto-zoom)
+            map.locate({
+                watch: false,
+                setView: false,  // Don't auto-zoom to user location
+                maxZoom: 16
+            });
+            
+            let locationMarker = null;
+            let locationCircle = null;
+            
+            map.on('locationfound', (e) => {
+                const radius = e.accuracy / 2;
+                
+                // Remove old marker and circle if they exist
+                if (locationMarker) {
+                    map.removeLayer(locationMarker);
+                }
+                if (locationCircle) {
+                    map.removeLayer(locationCircle);
+                }
+                
+                // Add blue dot for user location
+                locationMarker = L.circleMarker(e.latlng, {
+                    radius: 8,
+                    fillColor: '#4285F4',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map).bindPopup("You are here");
+                
+                // Add accuracy circle
+                locationCircle = L.circle(e.latlng, radius, {
+                    color: '#4285F4',
+                    fillColor: '#4285F4',
+                    fillOpacity: 0.1,
+                    weight: 1
+                }).addTo(map);
+            });
+            
+            map.on('locationerror', (e) => {
+                console.log('Location access denied or unavailable');
+            });
         }
 
         function addWellsAndWindMachines() {
@@ -1084,6 +1134,50 @@ const blockDetails = {
 
             // Add blocks layer to map by default
             blocksLayer.addTo(map);
+            
+            // Add geolocation control (shows user location but doesn't auto-zoom)
+            map.locate({
+                watch: false,
+                setView: false,  // Don't auto-zoom to user location
+                maxZoom: 16
+            });
+            
+            let locationMarker = null;
+            let locationCircle = null;
+            
+            map.on('locationfound', (e) => {
+                const radius = e.accuracy / 2;
+                
+                // Remove old marker and circle if they exist
+                if (locationMarker) {
+                    map.removeLayer(locationMarker);
+                }
+                if (locationCircle) {
+                    map.removeLayer(locationCircle);
+                }
+                
+                // Add blue dot for user location
+                locationMarker = L.circleMarker(e.latlng, {
+                    radius: 8,
+                    fillColor: '#4285F4',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map).bindPopup("You are here");
+                
+                // Add accuracy circle
+                locationCircle = L.circle(e.latlng, radius, {
+                    color: '#4285F4',
+                    fillColor: '#4285F4',
+                    fillOpacity: 0.1,
+                    weight: 1
+                }).addTo(map);
+            });
+            
+            map.on('locationerror', (e) => {
+                console.log('Location access denied or unavailable');
+            });
         }
 
 
