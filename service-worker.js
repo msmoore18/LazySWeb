@@ -1,7 +1,7 @@
 // Service Worker for Lazy S Ranch Map
 // This handles caching and automatic updates
 
-const CACHE_NAME = 'lazy-s-ranch-v1.5.0';
+const CACHE_NAME = 'lazy-s-ranch-v1.5.1';
 const urlsToCache = [
   './',
   './index.html',
